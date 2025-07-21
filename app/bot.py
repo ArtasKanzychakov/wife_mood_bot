@@ -15,8 +15,13 @@ TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
-@dp.message_handler(commands=["start"])
+# Глобальное хранилище для chat_id
+TARGET_CHAT_ID = None
+
+@dp.message_handler(commands=["start", "go"])
 async def start_command(message: types.Message):
+    global TARGET_CHAT_ID
+    TARGET_CHAT_ID = message.chat.id
     await message.answer("Привет! Я твой бот-настроение 🌸")
 
 @dp.message_handler(commands=["fashion"])
