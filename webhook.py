@@ -30,3 +30,12 @@ app.add_routes(routes)
 
 if __name__ == '__main__':
     web.run_app(app, port=10000)  # Render запускает сервер на 10000
+
+from wakeup import wakeup_service
+import asyncio
+
+async def background_tasks(app):
+    asyncio.create_task(wakeup_service.ping_server())
+
+app.on_startup.append(background_tasks)
+
