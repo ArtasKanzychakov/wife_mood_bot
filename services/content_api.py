@@ -2,6 +2,7 @@ import aiohttp
 import json
 from config.settings import Config
 from config.fallbacks import FALLBACK_CONTENT
+from config.settings import Config
 import logging
 
 async def get_giphy_gif(query: str) -> str:
@@ -47,3 +48,9 @@ async def get_yandex_music_tracks() -> list:
     except Exception as e:
         logging.error(f"Yandex Music error: {e}")
         return FALLBACK_CONTENT["music"]
+async def get_news():
+    # Было
+    # url = f"https://api.rbc.ru?token={Config.RBC_API_KEY}"
+    
+    # Стало
+    url = f"https://newsapi.org/v2/...&apiKey={Config.NEWSAPI_KEY}"
