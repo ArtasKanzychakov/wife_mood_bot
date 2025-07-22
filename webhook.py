@@ -27,3 +27,6 @@ async def setup_webhook():
 
 app = web.Application()
 app.add_routes(routes)
+
+if __name__ == '__main__':
+    web.run_app(app, port=10000)  # Render запускает сервер на 10000
