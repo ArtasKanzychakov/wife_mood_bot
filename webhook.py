@@ -2,6 +2,7 @@ from aiohttp import web
 from aiogram import Bot
 from config.settings import Config
 import logging
+from app import dp  # Добавлен импорт dp
 
 routes = web.RouteTableDef()
 bot = Bot(token=Config.BOT_TOKEN)
