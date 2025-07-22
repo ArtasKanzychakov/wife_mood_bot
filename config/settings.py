@@ -13,6 +13,7 @@ class Config:
     GIPHY_KEY = os.getenv('GIPHY_API_KEY')
     UNSPLASH_KEY = os.getenv('UNSPLASH_ACCESS_KEY')
     YANDEX_MUSIC_KEY = os.getenv('YANDEX_MUSIC_TOKEN')
+    NEWSAPI_KEY = os.getenv('NEWSAPI_KEY')
     
     # Timeouts
     REQUEST_TIMEOUT = 10
