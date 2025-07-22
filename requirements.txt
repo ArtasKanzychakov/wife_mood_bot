@@ -1,8 +1,8 @@
-aiohttp==3.8.6
+aiohttp==3.9.3  # Новая версия с лучшей совместимостью
 aiogram==2.25.1
 beautifulsoup4==4.12.3
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 pytz==2023.3.post1
 async-timeout==4.0.3
-lxml==4.9.3
+lxml==4.9.4  # Обновлённая версия
