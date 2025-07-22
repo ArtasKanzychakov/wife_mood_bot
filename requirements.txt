@@ -5,4 +5,4 @@ psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 pytz==2023.3.post1
 async-timeout==4.0.3
-lxml==4.9.4  # Более новая версия для совместимости
+lxml==4.9.4
