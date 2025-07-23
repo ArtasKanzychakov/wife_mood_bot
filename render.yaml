@@ -4,9 +4,19 @@ services:
     runtime: python
     pythonVersion: "3.9.16"
     buildCommand: pip install -r requirements.txt
-    startCommand: python app/webhook.py
+    startCommand: python webhook.py
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         fromGroup: telegram-bot-secrets
       - key: WEBHOOK_URL
         fromGroup: webhook-url-secrets
+      - key: POSTGRES_URL
+        fromGroup: postgres-connection
+      - key: GIPHY_API_KEY
+        fromGroup: api-keys
+      - key: UNSPLASH_ACCESS_KEY
+        fromGroup: api-keys
+      - key: YANDEX_MUSIC_TOKEN
+        fromGroup: api-keys
+      - key: NEWSAPI_KEY
+        fromGroup: api-keys
