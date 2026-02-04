@@ -4,17 +4,24 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
+    # Основные настройки
     BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
     WEBHOOK_URL = os.getenv('WEBHOOK_URL')
-    POSTGRES_URL = os.getenv('POSTGRES_URL')
-    ALLOWED_IPS = os.getenv('ALLOWED_IPS', '149.154.160.0/20').split(',')
+    ADMIN_ID = int(os.getenv('ADMIN_ID', 0))
     
-    # API Keys
-    GIPHY_KEY = os.getenv('GIPHY_API_KEY')
-    UNSPLASH_KEY = os.getenv('UNSPLASH_ACCESS_KEY')
-    YANDEX_MUSIC_KEY = os.getenv('YANDEX_MUSIC_TOKEN')
-    NEWSAPI_KEY = os.getenv('NEWSAPI_KEY')
+    # БД
+    POSTGRES_URL = os.getenv('POSTGRES_URL', 'sqlite:///bot.db')
     
-    # Timeouts
+    # Время
     REQUEST_TIMEOUT = 10
-    PING_INTERVAL = 300  # 5 минут
+    PING_INTERVAL = 330  # 5.5 минут
+    HEALTH_CHECK_INTERVAL = 660  # 11 минут
+    
+    # Парсинг
+    CACHE_TIME = 300  # 5 минут кэша
+    
+    # Безопасность
+    ALLOWED_IPS = [
+        '149.154.160.0/20',
+        '91.108.4.0/22'
+    ]
