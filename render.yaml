@@ -1,22 +1,21 @@
 services:
   - type: web
-    name: wife_mood_bot
+    name: wife-mood-bot
     runtime: python
-    pythonVersion: "3.9.16"
+    pythonVersion: "3.9.1"
     buildCommand: pip install -r requirements.txt
-    startCommand: python webhook.py
+    startCommand: python main.py
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.1
       - key: TELEGRAM_BOT_TOKEN
-        fromGroup: telegram-bot-secrets
+        sync: false
       - key: WEBHOOK_URL
-        fromGroup: webhook-url-secrets
-      - key: POSTGRES_URL
-        fromGroup: postgres-connection
-      - key: GIPHY_API_KEY
-        fromGroup: api-keys
-      - key: UNSPLASH_ACCESS_KEY
-        fromGroup: api-keys
-      - key: YANDEX_MUSIC_TOKEN
-        fromGroup: api-keys
-      - key: NEWSAPI_KEY
-        fromGroup: api-keys
+        sync: false
+      - key: WEBHOOK_SECRET
+        sync: false
+      - key: ADMIN_ID
+        sync: false
+    healthCheckPath: /health
+    healthCheckTimeout: 30
+    autoDeploy: true
