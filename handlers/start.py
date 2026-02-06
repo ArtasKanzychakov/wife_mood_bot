@@ -1,97 +1,143 @@
-from aiogram import types, Dispatcher
+from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from database.crud import create_user
-from database.models import User
+from config.keyboards import main_menu
+from database.crud import get_or_create_user, update_user
 from datetime import datetime
 import re
 
+
 class Registration(StatesGroup):
     GET_NAME = State()
-    GET_AGE = State()
-    GET_BIRTH_DATE = State()
-    CONFIRM_ZODIAC = State()
+    GET_ZODIAC = State()
 
-async def start_registration(message: types.Message):
-    await message.answer("👋 Давай познакомимся! Как тебя зовут?")
-    await Registration.GET_NAME.set()
 
-async def process_name(message: types.Message, state: FSMContext):
-    if not re.match(r"^[а-яА-ЯёЁa-zA-Z]{2,50}$", message.text):
-        await message.answer("Пожалуйста, введите корректное имя (только буквы)")
-        return
+async def start_command(message: types.Message, state: FSMContext):
+    """Обработчик команды /start"""
+    await show_typing(message.chat.id, message.bot)
     
-    await state.update_data(name=message.text)
+    # Проверяем, есть ли пользователь в БД
+    from database.crud import SessionLocal
+    db = SessionLocal()
     
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add("18-25", "26-35", "36+")
-    
-    await message.answer("Сколько тебе лет?", reply_markup=markup)
-    await Registration.GET_AGE.set()
-
-async def process_age(message: types.Message, state: FSMContext):
-    age_groups = {"18-25": 25, "26-35": 35, "36+": 36}
-    if message.text not in age_groups:
-        await message.answer("Пожалуйста, выберите вариант из клавиатуры")
-        return
-    
-    await state.update_data(age=age_groups[message.text])
-    
-    await message.answer("Введите дату рождения в формате ДД.ММ.ГГГГ", 
-                         reply_markup=types.ReplyKeyboardRemove())
-    await Registration.GET_BIRTH_DATE.set()
-
-async def process_birth_date(message: types.Message, state: FSMContext):
-    try:
-        birth_date = datetime.strptime(message.text, "%d.%m.%Y").date()
-    except ValueError:
-        await message.answer("Неверный формат даты. Попробуйте снова (ДД.ММ.ГГГГ)")
-        return
-    
-    zodiac = calculate_zodiac(birth_date)
-    await state.update_data(birth_date=birth_date, zodiac=zinc(zodiac))
-    
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Да", callback_data="confirm_zodiac_yes"),
-               types.InlineKeyboardButton("Нет", callback_data="confirm_zodiac_no"))
-    
-    await message.answer(f"Ваш знак зодиака: {zodiac}. Верно?", reply_markup=markup)
-    await Registration.CONFIRM_ZODIAC.set()
-
-async def confirm_zodiac(callback: types.CallbackQuery, state: FSMContext):
-    if callback.data == "confirm_zodiac_no":
-        await callback.message.answer("Введите правильный знак зодиака:")
-        return
-    
-    user_data = await state.get_data()
-    await create_user(
-        telegram_id=callback.from_user.id,
-        name=user_data['name'],
-        age=user_data['age'],
-        birth_date=user_data['birth_date'],
-        zodiac=user_data['zinc']
+    user = get_or_create_user(
+        db,
+        telegram_id=message.from_user.id,
+        username=message.from_user.username,
+        first_name=message.from_user.first_name,
+        last_name=message.from_user.last_name
     )
     
-    await callback.message.answer("✅ Регистрация завершена!")
-    await state.finish()
+    db.close()
+    
+    if user.zodiac:
+        # Пользователь уже зарегистрирован
+        welcome_text = (
+            f"✨ *С возвращением, {user.first_name or 'друг'}!*\n\n"
+            f"Рад снова тебя видеть! 🤗\n\n"
+            f"Твой знак зодиака: *{user.zodiac}*\n"
+            f"Настроение сегодня? 😊"
+        )
+        
+        await message.answer(
+            welcome_text,
+            parse_mode='Markdown',
+            reply_markup=main_menu()
+        )
+        await state.finish()
+    else:
+        # Новая регистрация
+        await message.answer(
+            "👋 *Привет! Я бот для хорошего настроения!*\n\n"
+            "Я буду каждый день радовать тебя:\n"
+            "🔮 Гороскопами\n"
+            "📰 Интересными новостями\n"
+            "🎵 Музыкой\n"
+            "💬 Мудрыми цитатами\n\n"
+            "Давай познакомимся! Как тебя зовут?",
+            parse_mode='Markdown'
+        )
+        await Registration.GET_NAME.set()
 
-def calculate_zodiac(birth_date):
-    # Упрощенная логика определения знака зодиака
-    dates_zodiac = [
-        (120, 'Козерог'), (218, 'Водолей'), (320, 'Рыбы'),
-        (420, 'Овен'), (521, 'Телец'), (621, 'Близнецы'),
-        (722, 'Рак'), (823, 'Лев'), (923, 'Дева'),
-        (1023, 'Весы'), (1122, 'Скорпион'), (1222, 'Стрелец'),
-        (1231, 'Козерог')
+
+async def process_name(message: types.Message, state: FSMContext):
+    """Обработка имени"""
+    name = message.text.strip()
+    
+    if not re.match(r"^[а-яА-ЯёЁa-zA-Z]{2,50}$", name):
+        await message.answer(
+            "❌ Пожалуйста, введите корректное имя\n"
+            "(только буквы, 2-50 символов)"
+        )
+        return
+    
+    await state.update_data(name=name)
+    
+    from config.keyboards import horoscope_menu
+    await message.answer(
+        f"Приятно познакомиться, *{name}*! 👋\n\n"
+        "Теперь выбери свой знак зодиака:",
+        parse_mode='Markdown',
+        reply_markup=horoscope_menu()
+    )
+    await Registration.GET_ZODIAC.set()
+
+
+async def process_zodiac(callback: types.CallbackQuery, state: FSMContext):
+    """Обработка выбора знака зодиака"""
+    zodiac_index = int(callback.data.split('_')[1])
+    
+    zodiacs = [
+        '♈ Овен', '♉ Телец', '♊ Близнецы',
+        '♋ Рак', '♌ Лев', '♍ Дева',
+        '♎ Весы', '♏ Скорпион', '♐ Стрелец',
+        '♑ Козерог', '♒ Водолей', '♓ Рыбы'
     ]
-    month_day = birth_date.month * 100 + birth_date.day
-    return next(zodiac for limit, zodiac in dates_zodiac if month_day <= limit)
+    
+    zodiac = zodiacs[zodiac_index]
+    user_data = await state.get_data()
+    
+    # Сохраняем в БД
+    from database.crud import SessionLocal
+    db = SessionLocal()
+    
+    update_user(
+        db,
+        telegram_id=callback.from_user.id,
+        zodiac=zodiac
+    )
+    
+    db.close()
+    
+    await callback.message.edit_text(
+        f"✅ *Отлично! Регистрация завершена!*\n\n"
+        f"Твой знак зодиака: *{zodiac}*\n\n"
+        f"Теперь ты можешь пользоваться всеми функциями бота! 🎉",
+        parse_mode='Markdown'
+    )
+    
+    await callback.message.answer(
+        "👇 Выбери нужный раздел в меню:",
+        reply_markup=main_menu()
+    )
+    
+    await state.finish()
+    await callback.answer()
+
+
+async def show_typing(chat_id, bot):
+    """Показать статус 'печатает'"""
+    await bot.send_chat_action(chat_id, 'typing')
+    import asyncio
+    await asyncio.sleep(0.3)
+
 
 def register_handlers(dp: Dispatcher):
-    dp.register_message_handler(start_registration, commands=["start"])
+    """Регистрация обработчиков"""
+    dp.register_message_handler(start_command, commands=["start", "menu"])
     dp.register_message_handler(process_name, state=Registration.GET_NAME)
-    dp.register_message_handler(process_age, state=Registration.GET_AGE)
-    dp.register_message_handler(process_birth_date, state=Registration.GET_BIRTH_DATE)
-    dp.register_callback_query_handler(confirm_zodiac, 
-                                     lambda c: c.data.startswith('confirm_zodiac_'),
-                                     state=Registration.CONFIRM_ZODIAC)
+    dp.register_callback_query_handler(
+        process_zodiac,
+        lambda c: c.data.startswith('zodiac_'),
+        state=Registration.GET_ZODIAC
+    )
